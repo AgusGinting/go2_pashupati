@@ -316,7 +316,9 @@ robot's own footprint, grown by `filter.self_margin`, is ignored.
 | `filter.height_min`                  | 0.10      | m above the floor; lower sees low objects, too low sees the floor on slopes        |
 | `filter.height_max`                  | 1.55      | m above the floor (the L1W's top plus margin)                                      |
 | `filter.self_margin`                 | 0.05      | m around the footprint: _Slowed_ or _Blocked_ with nothing around, widen it 2-3 cm |
-| `front.num_sectors`, `front.fov_deg` | 64, 360   | the avoidance also sees behind (needed by the back-up after an inspection)         |
+| `front.num_sectors`, `front.fov_deg` | 32, 180   | 64, 360 when the robot backs up after an inspection (`reverse_distance_m` > 0)     |
+| `filter.level_source`                | none      | `tf` levels the band with the odometry's tilt: only on slopes, with a level odometry |
+| `memory.enabled`                     | false     | true keeps obstacles below the lowest beam for 10 s (odom frame)                   |
 
 # Sites, maps and localization
 
@@ -359,9 +361,11 @@ visible tags over `tag.record_duration_sec` and writes the site's `tags.json`.
 
 ## Odometry
 
-FAST-LIO2 (`fastlio_mapping_node`) starts once the robot stands still. Pashupati keeps the
-on-line extrinsic estimation that was field-tested on the L1W (`mapping.extrinsic_est_en: true`)
-and lets `odometry_gate` accept a standing quadruped's lean (`max_tilt_deg: 8`).
+FAST-LIO2 (`fastlio_mapping_node`) starts once the robot stands still. `odometry_gate` accepts a
+standing quadruped's lean (`max_tilt_deg: 8`), and `odometry_monitor_node` reports a tilted
+odometry only beyond that (`tilt.max_deg: 9`). The on-line extrinsic estimation stays off
+(`mapping.extrinsic_est_en: false`, Dharma's default): on the L1W in the open mall it let the
+odometry tilt and drift in z.
 
 # Inspection and people
 

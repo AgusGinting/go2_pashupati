@@ -5,24 +5,33 @@
 
 # ---------------------------------------------------------------- Dharma
 
-fastlio_mapping_node: # on top of dharma_odometry's fast_lio.yaml
-  ros__parameters:
-    mapping:
-      extrinsic_est_en: true # field-tested on the robot (Pashupati 2.0); Dharma's default: false
+# FAST-LIO keeps Dharma's mapping.extrinsic_est_en: false. The on-line extrinsic estimation of
+# Pashupati 2.0 let the odometry tilt and drift in z in the open mall (odometry_monitor: "odom
+# tilted", "z drift"); the Mid-360's IMU is built in and calibrated.
 
 odometry_gate:
   ros__parameters:
     max_tilt_deg: 8.0 # a standing quadruped leans a little; catches a sitting robot
 
+odometry_monitor_node:
+  ros__parameters:
+    tilt:
+      # FAST-LIO's frame starts as tilted as the IMU (it does not level to gravity): a start the
+      # gate accepts (up to 8 deg) is no drift; only more than that counts as one
+      max_deg: 9.0
+
 lidar_sector_node:
   ros__parameters:
-    front:
-      # 360 deg so the avoidance also sees behind: needed by the back-up after an inspection
-      # (path_follower_node inspection.reverse_distance_m > 0)
-      num_sectors: 64
-      fov_deg: 360.0
+    # front: Dharma's 180 deg (32 sectors); 360 only for a back-up after an inspection
+    # (path_follower_node inspection.reverse_distance_m > 0)
     filter:
       height_max: 1.55 # m above the floor (base_link + 1.20 m)
+      # As Pashupati 2.0: a fixed height band on base_link. Leveling with the odometry's tilt
+      # turned a slightly tilted odometry into ghost obstacles (the floor a metre or two away):
+      # the robot stopped and weaved around nothing. The mall floor is flat.
+      level_source: none
+    memory:
+      enabled: false # as 2.0: remembered points (odom frame, 10 s) kept those ghosts around
 
 localization_node:
   ros__parameters:
