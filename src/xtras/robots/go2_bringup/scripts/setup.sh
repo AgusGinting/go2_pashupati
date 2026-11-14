@@ -3,7 +3,7 @@
 # `scripts/setup.sh check` and `scripts/setup.sh install robot`:
 #
 #   setup.sh check     # unitree_sdk2py importable, the robot answers on its interface
-#   setup.sh install   # cyclonedds 0.10.2 and unitree_sdk2py (pinned) for this user
+#   setup.sh install   # cyclonedds 0.10.2 and unitree_sdk2py (pinned, ~/unitree_sdk2_python)
 #
 # Env: GO2_IFACE (eth0), ROBOT_IP (192.168.123.161), UNITREE_SDK_REF (the pinned commit),
 #      CYCLONEDDS_HOME (a Cyclone DDS 0.10 C build; built in ~/cyclonedds/install when pip
@@ -67,8 +67,13 @@ install() {
         [[ -n "${CYCLONEDDS_HOME:-}" ]] || build_cyclonedds
         python3 -m pip install --user "cyclonedds==$CYCLONEDDS_VERSION"
     }
-    # --no-deps: its opencv-python would shadow ROS's cv2 and its numpy; ROS has numpy
-    python3 -m pip install --user --no-deps "unitree_sdk2py @ git+$UNITREE_SDK_URL@$UNITREE_SDK_REF"
+    # editable from a clone, as Unitree installs it: a built wheel of this commit leaves out
+    # subpackages its __init__ imports (b2). --no-deps: its opencv-python would shadow ROS's cv2
+    local sdk="$HOME/unitree_sdk2_python"
+    [[ -d "$sdk/.git" ]] || git clone -q "$UNITREE_SDK_URL" "$sdk"
+    git -C "$sdk" fetch -q --depth 1 origin "$UNITREE_SDK_REF"
+    git -C "$sdk" checkout -q "$UNITREE_SDK_REF"
+    python3 -m pip install --user --no-deps -e "$sdk"
     sdk_import && echo "unitree_sdk2py: ok"
 }
 
