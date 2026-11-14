@@ -10,6 +10,17 @@ launch. Nothing else in the repository depends on a robot brand.
 | `slam/fast_lio2`            | FAST-LIO2, `odometry:=fast_lio` (submodule)                                                                                                                                                    |
 | `slam/leg_kilo`             | Leg-KILO, `odometry:=leg_kilo` (optional: clone the `pashupati` branch of the DarmawanRobotics fork here, see [dharma_odometry](https://github.com/DarmawanRobotics/dharma_odometry#leg-kilo)) |
 | `robots/<name>`             | your robot package, added per deployment                                                                                                                                                       |
+| `patches/<path>`           | local fixes to a submodule above (`*.patch`, applied by `scripts/setup.sh install build`)                                                                                                       |
+
+## Patches
+
+`scripts/setup.sh install build` applies `patches/<path>/*.patch` onto `src/xtras/<path>` before
+it builds, in name order, and skips a patch that is already applied. The submodules stay pinned
+to their upstream commits; `git status` ignores their patched files (`ignore = dirty`).
+
+| Patch                                       | Why                                                                                     |
+| ------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `slam/fast_lio2/0001-imu-best-effort.patch` | the IMU arrived ~1 s late (reliable, queue 10): odometry and TF ~1.4 s old, scan blind |
 
 ## Adding a robot
 

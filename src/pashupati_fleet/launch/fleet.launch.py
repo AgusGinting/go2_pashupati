@@ -31,7 +31,11 @@ def nodes(context):
     files = pl.parameter_files(arg, PACKAGE, 'fleet.yaml')
     ns = arg('robot_ns').strip('/') or 'robot'
     values = pl.overrides(
-        arg, server_url=arg('server_url'), token=arg('token'), robot_id=arg('robot_id')
+        arg,
+        server_url=arg('server_url'),
+        token=arg('token'),
+        robot_id=arg('robot_id'),
+        driver_diagnostics_topic=f'/{ns}/diagnostics',
     )
     return [
         dl.node(
@@ -40,7 +44,9 @@ def nodes(context):
             name=NODE,
             output='screen',
             parameters=[*files, *dl.node_overrides(NODE, values)],
-            remappings=[('battery', f'/{ns}/battery'), ('diagnostics', f'/{ns}/diagnostics')],
+            # Not a 'diagnostics' remap: rcl expands it to /diagnostics, so it would also move the
+            # health monitor's findings (CPU, GPU, RAM) to the driver's topic.
+            remappings=[('battery', f'/{ns}/battery')],
             ros_arguments=pl.ros_arguments(arg),
             respawn=True,
             respawn_delay=3.0,

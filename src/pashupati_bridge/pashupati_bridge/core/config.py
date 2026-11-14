@@ -68,6 +68,9 @@ class TeleopConfig:
     health_diagnostics_topic: str = param(
         '/diagnostics', live=False, doc="health_monitor_node's findings (CPU, GPU, RAM)"
     )
+    driver_diagnostics_topic: str = param(
+        '/robot/diagnostics', live=False, doc="the robot driver's status (/<robot_ns>/diagnostics)"
+    )
     inspection_node: str = param(
         '/anomaly_detector_node', live=False, doc='its live parameters and status'
     )

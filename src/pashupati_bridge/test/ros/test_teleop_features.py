@@ -232,3 +232,37 @@ def test_people_detection_is_switched_and_shown_with_the_system_load(rig):
     )
     rig.executor.remove_node(detector)
     detector.destroy_node()
+
+
+def test_health_figures_and_driver_status_arrive_with_the_launch_remaps(launched_rig):
+    """/diagnostics (CPU, RAM) and /<robot_ns>/diagnostics (driver) both reach the handheld."""
+    rig = launched_rig
+    source = fake_node(rig, 'health_monitor_node', {})
+    health_pub = source.create_publisher(HealthStatus, 'health/status', LATCHED)
+    findings_pub = source.create_publisher(DiagnosticArray, '/diagnostics', 10)
+    driver_pub = source.create_publisher(DiagnosticArray, '/l1w/diagnostics', 10)
+    a = rig.client()
+    rig.send(a, {'t': 'hello'})
+    memory = DiagnosticStatus(
+        name='health: system:memory',
+        values=[KeyValue(key='value', value='41.0'), KeyValue(key='used_gb', value='6.4'),
+                KeyValue(key='total_gb', value='15.3')],
+    )  # fmt: skip
+    driver = DiagnosticStatus(level=DiagnosticStatus.WARN, name='l1w_driver', message='2 fault(s)')
+    for _ in range(3):  # volatile: the gateway may not have discovered the publishers yet
+        findings_pub.publish(DiagnosticArray(status=[memory]))
+        driver_pub.publish(DiagnosticArray(status=[driver]))
+        rig.spin(0.2)
+    health_pub.publish(HealthStatus(level=HealthStatus.OK))
+    states = []
+
+    def arrived():
+        states.extend(m for m in rig.received(a) if m['t'] == 'state')
+        return bool(states) and states[-1]['health'] and states[-1]['driver']
+
+    assert wait_until(rig, arrived)
+    state = states[-1]
+    assert (state['health']['ram'], state['health']['ram_used']) == (41.0, 6.4)
+    assert state['driver']['msg'] == '2 fault(s)'
+    rig.executor.remove_node(source)
+    source.destroy_node()

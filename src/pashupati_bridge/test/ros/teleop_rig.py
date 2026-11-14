@@ -28,11 +28,13 @@ def free_port() -> int:
 class Rig:
     """The node, a listener on the stick source and UDP clients."""
 
-    def __init__(self, params=()):
+    def __init__(self, params=(), remaps=()):
         self.port = free_port()
         args = ['--ros-args', '-p', f'port:={self.port}', '-p', f'token:={TOKEN}']
         for param in [*ROBOT, *params]:
             args += ['-p', param]
+        for name, target in remaps:
+            args += ['-r', f'{name}:={target}']
         compat.init(args=args)
         try:
             self.node = TeleopUdpNode()

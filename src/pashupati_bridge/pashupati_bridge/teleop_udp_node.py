@@ -48,7 +48,9 @@ class TeleopUdpNode(DharmaNode):
         self.estop_pub = self.create_publisher(String, 'control/estop_request', EVENTS)
         self.calls = CommandClients(self, cfg, self.speed_range)
         self.patrol = PatrolSpeed(self.calls.speed_client, self.speed_range)
-        self.telemetry = Telemetry(self, cfg.health_diagnostics_topic, self.send_route)
+        self.telemetry = Telemetry(
+            self, cfg.health_diagnostics_topic, cfg.driver_diagnostics_topic, self.send_route
+        )
         self.streams = Streams(self, cfg, self.send_stream)
         # A reader thread wakes the executor per datagram: no polling timer while idle.
         self.wake = self.create_guard_condition(self.drain)

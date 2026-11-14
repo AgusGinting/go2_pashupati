@@ -38,7 +38,7 @@ class PersonDetectorNode(DharmaNode):
         self.intrinsics = None
         self.people_pub = self.create_publisher(PoseArray, 'perception/people', 10)
         self.status_pub = self.latched(String, 'perception/people_status')
-        self.create_subscription(CameraInfo, cfg.camera_info_topic, self.on_info, 10)
+        self.create_subscription(CameraInfo, cfg.camera_info_topic, self.on_info, SENSOR)
         kind = CompressedImage if cfg.compressed else Image
         self.create_subscription(kind, cfg.image_topic, self.on_image, SENSOR)
         self.config.on_change(self.on_config)

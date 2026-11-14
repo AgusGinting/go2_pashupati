@@ -16,6 +16,22 @@ def test_jetson_pipeline_uses_the_hardware_decoder():
     assert pipeline.endswith('video/x-raw,format=BGR ! appsink drop=true max-buffers=1 sync=false')
 
 
+def test_rate_and_size_are_applied_inside_the_pipeline():
+    """Frames are dropped and scaled before the colour conversion, on the Jetson in hardware."""
+    jetson = gstreamer_pipeline(URL, 'h264', 'jetson', max_fps=5.0, width=1280, height=720)
+    assert (
+        'nvvidconv ! video/x-raw,format=BGRx,width=1280,height=720 ! '
+        'videorate max-rate=5 ! videoconvert' in jetson
+    )
+    software = gstreamer_pipeline(URL, 'h264', 'software', max_fps=2.5, width=640, height=360)
+    assert (
+        'avdec_h264 ! videorate max-rate=3 ! '
+        'videoscale ! video/x-raw,width=640,height=360 ! videoconvert' in software
+    )
+    assert 'videorate' not in gstreamer_pipeline(URL, 'h264', 'jetson', max_fps=0.0)
+    assert 'width' not in gstreamer_pipeline(URL, 'h264', 'software', width=1280, height=0)
+
+
 def test_software_pipeline_and_h265():
     """The software pipeline uses libav; h265 changes the depayloader too."""
     pipeline = gstreamer_pipeline(URL, 'H265', 'software')

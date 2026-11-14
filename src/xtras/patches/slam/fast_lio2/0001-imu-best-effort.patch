@@ -1,0 +1,20 @@
+FAST-LIO: take the IMU best effort with a 10 s queue.
+
+The IMU subscription was reliable with a queue of 10 (50 ms at 200 Hz). A frame that took longer
+filled it, Fast DDS refused samples and repaired them in order, and FAST-LIO received the IMU
+about a second late. It holds every scan until IMU data passes its end, so /Odometry, its TF
+and the registered cloud were ~1.4 s old: safety scan blind, the robot stood still.
+
+diff --git a/src/laserMapping.cpp b/src/laserMapping.cpp
+index e5d9950..050c50d 100644
+--- a/src/laserMapping.cpp
++++ b/src/laserMapping.cpp
+@@ -926,7 +926,7 @@ public:
+         {
+             sub_pcl_pc_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(lid_topic, rclcpp::SensorDataQoS(), standard_pcl_cbk);
+         }
+-        sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(imu_topic, 10, imu_cbk);
++        sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(imu_topic, rclcpp::QoS(rclcpp::KeepLast(2000)).best_effort(), imu_cbk);
+         pubLaserCloudFull_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/cloud_registered", 20);
+         pubLaserCloudFull_body_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/cloud_registered_body", 20);
+         pubLaserCloudEffect_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/cloud_effected", 20);

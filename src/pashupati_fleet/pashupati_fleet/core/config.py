@@ -50,3 +50,6 @@ class FleetConfig:
     health_diagnostics_topic: str = param(
         '/diagnostics', live=False, doc="health_monitor_node's findings (CPU, GPU, RAM, rates)"
     )
+    driver_diagnostics_topic: str = param(
+        '/robot/diagnostics', live=False, doc="the robot driver's status (/<robot_ns>/diagnostics)"
+    )

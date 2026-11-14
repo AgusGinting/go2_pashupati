@@ -44,8 +44,11 @@ def nodes(context):
             robot_command_prefix=f'/{ns}/',
             video_port=int(arg('video_port')) if arg('video_port') else None,
             camera_topic=f'{arg("camera_topics")}/image_raw/compressed',
+            driver_diagnostics_topic=f'/{ns}/diagnostics',
         )
-        remaps = [(n, f'/{ns}/{n}') for n in ('battery', 'diagnostics', 'cmd_vel')]
+        # Not a 'diagnostics' remap: rcl expands it to /diagnostics, so it would also move the
+        # health monitor's findings (CPU, GPU, RAM) to the driver's topic.
+        remaps = [(n, f'/{ns}/{n}') for n in ('battery', 'cmd_vel')]
         out.append(node('teleop_udp_node', 'teleop_udp_node', files, values, remaps, arg))
     if camera == 'rtsp':
         topics = arg('camera_topics').rstrip('/')

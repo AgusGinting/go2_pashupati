@@ -10,6 +10,7 @@ rectifies the image when a calibration file is given.
 
 from __future__ import annotations
 
+import array
 import threading
 import time
 
@@ -23,6 +24,18 @@ from pashupati_bridge.core.config import CameraConfig
 from pashupati_bridge.core.rtsp import decoder_candidates, gstreamer_pipeline, opencv_has_gstreamer
 
 RECONNECT_MAX_SEC = 30.0
+
+
+def byte_array(data: bytes) -> array.array:
+    """
+    Return data as the uint8 array a message field takes without a per-byte conversion.
+
+    rclpy checks a bytes object byte by byte (a 1280x720 frame took 0.75 s on the Jetson, the
+    node fell to 2 fps at 100 % CPU); an array('B') goes through the buffer protocol (1 ms).
+    """
+    out = array.array('B')
+    out.frombytes(data)
+    return out
 
 
 class RtspCameraNode(DharmaNode):
@@ -70,8 +83,9 @@ class RtspCameraNode(DharmaNode):
                 capture = cv2.VideoCapture(cfg.url, cv2.CAP_FFMPEG)
             else:
                 pipeline = gstreamer_pipeline(
-                    cfg.url, cfg.codec, decoder, cfg.latency_ms, cfg.protocols
-                )
+                    cfg.url, cfg.codec, decoder, cfg.latency_ms, cfg.protocols,
+                    max_fps=cfg.max_fps, width=cfg.width, height=cfg.height,
+                )  # fmt: skip
                 capture = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
             if capture.isOpened():
                 if decoder != self.decoder:
@@ -133,7 +147,7 @@ class RtspCameraNode(DharmaNode):
             ok, jpeg = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, cfg.jpeg_quality])
             if ok:
                 self.last_jpeg = now
-                msg = CompressedImage(format='jpeg', data=jpeg.tobytes())
+                msg = CompressedImage(format='jpeg', data=byte_array(jpeg.tobytes()))
                 msg.header.stamp, msg.header.frame_id = stamp, cfg.frame_id
                 self.jpeg_pub.publish(msg)
         info = self.camera_info(frame.shape[1], frame.shape[0])
@@ -174,7 +188,7 @@ class RtspCameraNode(DharmaNode):
         msg = Image(height=int(frame.shape[0]), width=int(frame.shape[1]), encoding='bgr8')
         msg.header.stamp, msg.header.frame_id = stamp, self.config.frame_id
         msg.step = int(frame.shape[1]) * 3
-        msg.data = np.ascontiguousarray(frame).tobytes()
+        msg.data = byte_array(np.ascontiguousarray(frame).tobytes())
         return msg
 
     def destroy_node(self):
