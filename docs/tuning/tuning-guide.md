@@ -2,7 +2,7 @@
 title: Tuning Guide
 header: Pashupati Tuning Guide
 subtitle: What the parameters do, and how to tune a Genisom L1W for a site
-version: "2.2"
+version: "2.3"
 date: 2026-11-14
 audience: >-
   For the technician who sets up and tunes a Pashupati robot. You need an SSH shell on the robot
@@ -17,6 +17,7 @@ revisions:
   - ["2.0", "2026-10-29", "Pashupati 3 on Dharma 0.2: robot profile, stack file, sites, new parameter names"]
   - ["2.1", "2026-11-01", "Time synchronisation: chrony, PTP for the LiDAR, the offset to NETRA"]
   - ["2.2", "2026-11-14", "Field fixes on the L1W: perception as in 2.0, path shift patience and emergency slide, trip meter"]
+  - ["2.3", "2026-11-14", "Path shift passes obstacles beside it parallel and drives narrow lanes in their middle"]
 ---
 
 # How tuning works
@@ -301,21 +302,31 @@ offset allows), it looks for a way up to `path_shift.search_offset` from the rou
 right, and goes around; with no way there either it keeps waiting (_Blocked_ after
 `safety.blocked_timeout_sec`). The status shows `searching` meanwhile.
 
+Something beside the robot (a person, a bench, a corridor wall) only stops it when it touches
+the body: driving on parallel never comes closer, and the protective field allows the same.
+When there is no offset with the full clearance, the robot keeps its own line as long as
+nothing is ahead on it, and returns to the route once it can; it always may slide away from
+something beside it. In a lane bounded ahead on both sides (a narrow corridor, between a
+person and a wall) with less than `path_shift.centre_room` beside the body, it drives in the
+middle, to the centimetre. A gap ahead still needs `path_shift.clearance` on both sides (the
+field needs its `lateral_margin` too): a corridor at least 0.76 m wide for the L1W.
+
 Something in the emergency cone of `obstacle_avoidance_node` (`shared.emergency_distance` 0.75 m
 ahead, `shared.emergency_cone_deg` 60°) stops the forward motion at once. With
 `path_shift.emergency_slide` the robot may still slide sideways out of the cone (a pole right in
 front, room beside it); the protective field and the motion guard check every slide. The status
 starts with `EMERGENCY: ..., forward held` while it does.
 
-| `path_follower_node` parameter                        | Default    | What it does                                            |
-| ----------------------------------------------------- | ---------- | ------------------------------------------------------- |
-| `avoidance_mode`                                      | path_shift | or a reactive policy of `obstacle_avoidance_node`       |
-| `path_shift.max_offset`                               | 0.8        | m, furthest from the route                              |
-| `path_shift.clearance`                                | 0.10       | m, gap kept between the robot's side and an obstacle    |
-| `path_shift.stop_margin`                              | 0.40       | m, stop this far before an obstacle                     |
-| `path_shift.switch_cost`, `path_shift.switch_margin`  | 0.5, 0.05  | keeps its side around an obstacle                       |
-| `path_shift.patience_sec`, `path_shift.search_offset` | 3.0, 1.5   | s, m: wait with no gap, then search this far (0.8: off) |
-| `path_shift.emergency_slide`                          | true       | an emergency stops only the forward motion; false: all  |
+| `path_follower_node` parameter                        | Default    | What it does                                               |
+| ----------------------------------------------------- | ---------- | ---------------------------------------------------------- |
+| `avoidance_mode`                                      | path_shift | or a reactive policy of `obstacle_avoidance_node`          |
+| `path_shift.max_offset`                               | 0.8        | m, furthest from the route                                 |
+| `path_shift.clearance`                                | 0.10       | m, gap kept between the robot's side and an obstacle       |
+| `path_shift.stop_margin`                              | 0.40       | m, stop this far before an obstacle                        |
+| `path_shift.switch_cost`, `path_shift.switch_margin`  | 0.5, 0.05  | keeps its side around an obstacle                          |
+| `path_shift.patience_sec`, `path_shift.search_offset` | 3.0, 1.5   | s, m: wait with no gap, then search this far (0.8: off)    |
+| `path_shift.emergency_slide`                          | true       | an emergency stops only the forward motion; false: all     |
+| `path_shift.centre_room`                              | 0.25       | m beside the body: a narrower lane is driven in its middle |
 
 ## What the LiDAR sees
 
@@ -589,6 +600,7 @@ with spaces, and never put a comment after a value.
 | Does not pass gaps that look wide enough        | `path_shift.clearance`, `path_shift.max_offset`, the footprint     | clearance 0.05, larger offset                     |
 | Waits long in front of a person or a box        | `path_shift.patience_sec`, `path_shift.search_offset`              | 2.0; 2.0 where the aisle is wide                  |
 | Goes far around where it should wait            | `path_shift.search_offset`, `path_shift.patience_sec`              | 0.8 turns the search off                          |
+| Leaves the route in corridors wider than needed | `path_shift.centre_room`                                           | 0.15; 0.10 (= clearance) turns it off             |
 | _Blocked_ too soon or too late                  | `safety.blocked_timeout_sec`                                       | to taste                                          |
 | **Start** refused: robot too far from the route | `join.max_distance`                                                | drive closer, or raise it                         |
 | **Start** refused: not localized                | a tag in view, `/localization/start`                               | **Localize** on the handheld                      |

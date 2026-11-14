@@ -65,6 +65,12 @@ versions follow [SemVer](https://semver.org).
     (`path_shift.emergency_slide`). In front of a person or a box it waits
     `path_shift.patience_sec` (3 s), then searches a way up to `path_shift.search_offset`
     (1.5 m) instead of waiting until _Blocked_.
+  - Path shift (Dharma pin): with something beside it (a person, a bench) and no offset with
+    the full clearance, the robot waited for it to go away with nothing ahead; it now drives on
+    parallel along its own line (points beside only count when they touch the body, as for the
+    protective field) and returns to the route behind them. A narrow lane is driven in its
+    middle (`path_shift.centre_room`, 0.25 m): a corridor 0.80 m wide whose middle was 5 cm off
+    the route stopped the robot at its mouth.
 
 ## [3.0.0] - 2026-10-29
 
