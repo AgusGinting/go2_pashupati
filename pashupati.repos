@@ -9,11 +9,11 @@ repositories:
   dharma/dharma_interfaces:
     type: git
     url: git@github.com:DarmawanRobotics/dharma_interfaces.git
-    version: 2ddbb00b0ba35f6486515bde22cfb59ffe86acee # main 2026-10-28
+    version: c04650b4bc08288bfea2fac7d0f432befbb9ea9f # feat/trip 2026-11-14 (TripStatus)
   dharma/dharma_odometry:
     type: git
     url: git@github.com:DarmawanRobotics/dharma_odometry.git
-    version: 3789552b70f7f76b2625662c76f4a083a2df5d5b # main 2026-10-28
+    version: b3398530de5d9d70a0d8ed6bd7d1d3f91ebae9cc # feat/trip 2026-11-14 (trip meter)
   dharma/dharma_localization:
     type: git
     url: git@github.com:DarmawanRobotics/dharma_localization.git
@@ -30,7 +30,7 @@ repositories:
   dharma/dharma_navigation:
     type: git
     url: git@github.com:DarmawanRobotics/dharma_navigation.git
-    version: 10067f3d5e9c4c1464ff0911714e0ed1f4a1ced7 # main 2026-10-30
+    version: c2f116e5a10ccb34e728f736697202969c8b9452 # fix/path-shift-stuck 2026-11-14 (emergency slide, patience)
   dharma/dharma_health:
     type: git
     url: git@github.com:DarmawanRobotics/dharma_health.git
