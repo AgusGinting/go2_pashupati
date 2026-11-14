@@ -1,0 +1,12 @@
+# go2_driver_node (launch/bringup.launch.py driver_config:=)
+/**:
+  ros__parameters:
+    network_interface: eth0 # the Jetson's interface to the robot (192.168.123.0/24)
+    cmd_timeout: 0.5 # s without cmd_vel -> StopMove (the robot contract)
+    command_rate: 50.0 # Hz, Move while a command is fresh, odom from each new state
+    # ceiling under robot.limits (config/robot.yaml), never above them
+    max_vx: 1.0 # m/s
+    max_vy: 0.5 # m/s
+    max_wz: 1.5 # rad/s
+    state_timeout: 1.0 # s without sport state -> diagnostics ERROR, no battery
+    stand_settle: 1.5 # s between StandUp and BalanceStand

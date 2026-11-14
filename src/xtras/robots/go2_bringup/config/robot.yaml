@@ -1,0 +1,25 @@
+# The robot profile of the Unitree Go2 EDU (ROBOT_PARAMS=go2_bringup/config/robot.yaml), same
+# names as src/pashupati/config/robot.yaml. Starting values: MEASURE the footprint with the
+# sensors mounted, and the braking (max_decel, reaction_time: Tuning Guide 3.2) before a patrol.
+/**:
+  ros__parameters:
+    robot:
+      name: go2_edu # model, for logs
+      kinematics: omni # the Go2 strafes
+      base_height: 0.315 # m, the sport state's body_height when standing
+      footprint: # m, base_link to the edges (x forward, y left): body, head and legs
+        front: 0.38
+        rear: 0.36
+        half_width: 0.17
+      limits: # the L1W's field-tested values; the Go2 can do more, the site may not
+        max_vx: 1.0 # m/s
+        max_vy: 0.5 # m/s
+        max_wz: 1.5 # rad/s
+        max_accel: 0.5 # m/s^2
+        max_decel: 0.6 # m/s^2, MEASURE: braking from full speed on the site's floor
+        max_yaw_accel: 1.5 # rad/s^2
+        reaction_time: 0.25 # s, command to the robot actually braking
+      frames:
+        map: map
+        odom: odom
+        base: base_link

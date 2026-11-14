@@ -1,0 +1,104 @@
+name: go2
+
+# The Go2 EDU robot package (src/xtras/robots/go2_bringup): lint, then build and test on Foxy
+# (the Go2 EDU's own Jetson, Ubuntu 20.04) and Humble, with the pinned unitree_sdk2py. Needs no
+# Dharma checkout and no secret.
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: go2-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PKG_DIR: src/xtras/robots/go2_bringup
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # pre-commit skips src/xtras (vendor code); this package is ours, same rules (ruff.toml)
+      - run: pip install ruff==0.16.9
+      - run: ruff check "$PKG_DIR"
+      - run: ruff format --check --diff "$PKG_DIR"
+      - run: shellcheck -S warning "$PKG_DIR"/scripts/*.sh
+      - name: Installer is executable
+        run: test -x "$PKG_DIR/scripts/setup.sh"
+
+  build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [foxy, humble]
+    runs-on: ubuntu-22.04
+    container: ros:${{ matrix.distro }}-ros-base
+    env:
+      ROS_LOCALHOST_ONLY: "1"
+      PYTHONUNBUFFERED: "1"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: ROS apt key
+        # older images ship the ROS key that expired on 2025-06-01: put the current one in
+        # every keyring the ROS sources name
+        run: |
+          python3 -c "import urllib.request as u; open('/tmp/ros.key', 'wb').write(u.urlopen('https://raw.githubusercontent.com/ros/rosdistro/master/ros.key').read())"
+          for keyring in $(grep -rhoE 'signed-by=[^] ]+' /etc/apt/sources.list.d/ | cut -d= -f2 | sort -u); do
+            gpg --batch --yes --dearmor -o "$keyring" /tmp/ros.key
+          done
+      - name: Dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3-pip git liburdfdom-tools
+          rosdep update --rosdistro ${{ matrix.distro }} --include-eol-distros
+          # the sensor drivers are exec-only: the Livox one is a submodule, the RealSense one heavy
+          rosdep install --from-paths "$PKG_DIR" --ignore-src -y --rosdistro ${{ matrix.distro }} \
+            --skip-keys "livox_ros_driver2 realsense2_camera"
+      - name: Unitree SDK (the package's own installer)
+        run: |
+          "$PKG_DIR/scripts/setup.sh" install
+          python3 -c "import unitree_sdk2py, cyclonedds; print('cyclonedds', cyclonedds.__version__)"
+      - name: Build
+        run: |
+          source /opt/ros/${{ matrix.distro }}/setup.bash
+          colcon build --base-paths "$PKG_DIR" --event-handlers console_cohesion+
+      - name: Test
+        run: |
+          source /opt/ros/${{ matrix.distro }}/setup.bash
+          source install/setup.bash
+          colcon test --base-paths "$PKG_DIR" --event-handlers console_cohesion+
+          if ! colcon test-result --verbose > test-result.txt 2>&1; then
+            cat test-result.txt
+            msg=$(head -c 30000 test-result.txt \
+              | sed -e ':a' -e 'N' -e '$!ba' -e 's/%/%25/g' -e 's/\r/%0D/g' -e 's/\n/%0A/g')
+            echo "::error title=Failing tests (${{ matrix.distro }})::$msg"
+            exit 1
+          fi
+          cat test-result.txt
+          # the SDK contract tests must have run, not been skipped
+          if grep -q 'skipped="[1-9]' build/go2_bringup/pytest.xml; then
+            echo "::error title=SDK tests skipped (${{ matrix.distro }})::unitree_sdk2py not importable"
+            exit 1
+          fi
+      - name: URDF and launch
+        run: |
+          source /opt/ros/${{ matrix.distro }}/setup.bash
+          source install/setup.bash
+          check_urdf "$PKG_DIR/urdf/go2.urdf"
+          ros2 launch go2_bringup bringup.launch.py --show-args
+      - name: Test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: go2-test-results-${{ matrix.distro }}
+          path: build/go2_bringup/pytest.xml
+          if-no-files-found: ignore

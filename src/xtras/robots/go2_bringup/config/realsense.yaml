@@ -1,0 +1,11 @@
+# realsense2_camera_node (4.5x) for Pashupati: colour only (AprilTags, VLM inspection, people,
+# handheld video); depth, infrared and IMU are off to save the Jetson's USB and CPU.
+/**:
+  ros__parameters:
+    enable_color: true
+    rgb_camera.color_profile: 640,480,30
+    enable_depth: false
+    enable_infra1: false
+    enable_infra2: false
+    enable_gyro: false
+    enable_accel: false
