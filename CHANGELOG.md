@@ -7,6 +7,12 @@ versions follow [SemVer](https://semver.org).
 
 ### Added
 
+- Detours (Dharma pin): stuck while following (slower than 0.1 m/s for `detour.after_sec`,
+  1.5 s, not near a stop point), the robot turns in place toward the gap that takes it
+  furthest along the route and drives a straight run through it, checked like every command;
+  path shift then brings it back. It ends as soon as the way along the route opens again (a
+  crowd). Walls too close to slide with a box ahead, or a gap it passes only facing it, held
+  it BLOCKED.
 - Trip meter: Dharma's `odometry_monitor_node` counts the distance, the moving time, the speed
   now, the average and the top speed since the last reset (`odometry/trip`, kept in
   `~/.pashupati/trip.json` across restarts). The handheld shows it under the glance panel
