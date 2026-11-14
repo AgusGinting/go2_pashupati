@@ -41,7 +41,7 @@ def level_of(diagnostic) -> int:
 class Telemetry:
     """Subscribes to the status topics and keeps the handheld's view of the robot."""
 
-    def __init__(self, node, health_diagnostics: str, on_route):
+    def __init__(self, node, health_diagnostics: str, driver_diagnostics: str, on_route):
         self.on_route = on_route  # called with the new route points
         self.state = {
             'mode': 'auto',
@@ -72,7 +72,7 @@ class Telemetry:
         sub(String, 'perception/people_status', lambda m: self.on_detector('people', m), LATCHED)
         sub(WaypointPath, 'navigation/waypoints', self.on_waypoints, LATCHED)
         sub(BatteryState, 'battery', self.on_battery, 10)
-        sub(DiagnosticArray, 'diagnostics', self.on_driver, 10)
+        sub(DiagnosticArray, driver_diagnostics, self.on_driver, 10)
         sub(Twist, 'cmd_vel', self.on_cmd_vel, COMMAND)
 
     def on_control(self, msg: ControlStatus):

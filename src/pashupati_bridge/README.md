@@ -30,8 +30,9 @@ The wire format is [PROTOCOL.md](PROTOCOL.md) (v1, unchanged for the handheld).
 
 Telemetry comes from the typed status: `control/status` (mode, e-stop, field), `navigation/status`,
 `localization/status`, `health/status` with the computer's figures from the health monitor's
-`/diagnostics`, the detectors' status, `navigation/waypoints`, and the driver's `battery`,
-`diagnostics` and `cmd_vel` (remapped to `/<robot_ns>/` by the launch).
+`/diagnostics`, the detectors' status, `navigation/waypoints`, and the driver's `battery` and
+`cmd_vel` (remapped to `/<robot_ns>/` by the launch) and status (`driver_diagnostics_topic`, set to
+`/<robot_ns>/diagnostics` by the launch: a `diagnostics` remap would also catch `/diagnostics`).
 
 Set the same `token` in the site file and in the handheld; a wrong one is answered with `denied`.
 Camera, cloud and TF are subscribed only while a handheld is connected and wants them.

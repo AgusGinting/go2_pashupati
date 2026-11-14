@@ -35,7 +35,7 @@ def level_of(diagnostic) -> int:
 class FleetTelemetry:
     """Status subscriptions; events for NETRA go to send(message, durable)."""
 
-    def __init__(self, node, health_diagnostics: str):
+    def __init__(self, node, health_diagnostics: str, driver_diagnostics: str):
         self.node = node
         self.state = {
             'mode': 'auto',
@@ -67,7 +67,7 @@ class FleetTelemetry:
         ):
             sub(String, topic, lambda m, k=key: self.on_detector(k, m), LATCHED)
         sub(BatteryState, 'battery', self.on_battery, 10)
-        sub(DiagnosticArray, 'diagnostics', self.on_driver, 10)
+        sub(DiagnosticArray, driver_diagnostics, self.on_driver, 10)
 
     def on_control(self, msg: ControlStatus):
         """Mode, field and the e-stop (an alert when it engages)."""
