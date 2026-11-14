@@ -72,7 +72,9 @@ class FleetUplinkNode(DharmaNode):
         self.start_client = self.create_client(Trigger, 'navigation/start')
         self.switches = {c: self.create_client(SetParameters, f'{n}/set_parameters')
                          for c, n in SWITCHES.items()}  # fmt: skip
-        self.telemetry = FleetTelemetry(self, cfg.health_diagnostics_topic)
+        self.telemetry = FleetTelemetry(
+            self, cfg.health_diagnostics_topic, cfg.driver_diagnostics_topic
+        )
         sub = self.create_subscription
         sub(PoseArray, 'perception/people', self.on_people, 10)
         sub(String, 'route/saved', self.on_route_saved, EVENTS)
