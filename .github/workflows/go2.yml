@@ -66,9 +66,7 @@ jobs:
           rosdep install --from-paths "$PKG_DIR" --ignore-src -y --rosdistro ${{ matrix.distro }} \
             --skip-keys "livox_ros_driver2 realsense2_camera"
       - name: Unitree SDK (the package's own installer)
-        run: |
-          "$PKG_DIR/scripts/setup.sh" install
-          python3 -c "import unitree_sdk2py, cyclonedds; print('cyclonedds', cyclonedds.__version__)"
+        run: '"$PKG_DIR/scripts/setup.sh" install' # ends with the import check
       - name: Build
         run: |
           source /opt/ros/${{ matrix.distro }}/setup.bash
