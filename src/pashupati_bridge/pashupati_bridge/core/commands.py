@@ -25,6 +25,7 @@ TRIGGERS = {
     'record_tags': 'localization/record_tags',
     'dock': 'docking/dock',
     'undock': 'docking/undock',
+    'trip_reset': 'odometry/trip_reset',
 }
 # answered by the gateway itself, without a service
 LOCAL = ('get_route', 'inspection_categories', 'inspection_models', 'list_routes')

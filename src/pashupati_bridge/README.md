@@ -24,13 +24,15 @@ The wire format is [PROTOCOL.md](PROTOCOL.md) (v1, unchanged for the handheld).
 | `list_routes`, `load_route`    | the taught routes of every site under `sites_dir`, `navigation/load_path`                                                   |
 | `localize`, `record_tags`      | `localization/start`, `localization/record_tags`                                                                            |
 | `dock`, `undock`               | `docking/dock`, `docking/undock`                                                                                            |
+| `trip_reset`                   | `odometry/trip_reset` (dharma_odometry): the trip meter back to zero                                                        |
 | `nav_speed`                    | `path_follower_node` `speed.cruise`, between `patrol_speed_min` and `patrol_speed_max` (never above `robot.limits.max_vx`)  |
 | `inspection_set`, `people_set` | live parameters of `anomaly_detector_node`, `person_detector_node`                                                          |
 | robot commands                 | `std_srvs/Trigger` `/<robot_ns>/<name>` of the driver (`robot_commands`; `emergency_stop` also latches the software e-stop) |
 
 Telemetry comes from the typed status: `control/status` (mode, e-stop, field), `navigation/status`,
 `localization/status`, `health/status` with the computer's figures from the health monitor's
-`/diagnostics`, the detectors' status, `navigation/waypoints`, and the driver's `battery` and
+`/diagnostics`, the detectors' status, `navigation/waypoints`, `odometry/trip` (distance and
+speeds since `trip_reset`), and the driver's `battery` and
 `cmd_vel` (remapped to `/<robot_ns>/` by the launch) and status (`driver_diagnostics_topic`, set to
 `/<robot_ns>/diagnostics` by the launch: a `diagnostics` remap would also catch `/diagnostics`).
 
