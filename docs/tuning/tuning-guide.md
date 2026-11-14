@@ -2,7 +2,7 @@
 title: Tuning Guide
 header: Pashupati Tuning Guide
 subtitle: What the parameters do, and how to tune a Genisom L1W for a site
-version: "2.3"
+version: "2.4"
 date: 2026-11-14
 audience: >-
   For the technician who sets up and tunes a Pashupati robot. You need an SSH shell on the robot
@@ -18,6 +18,7 @@ revisions:
   - ["2.1", "2026-11-01", "Time synchronisation: chrony, PTP for the LiDAR, the offset to NETRA"]
   - ["2.2", "2026-11-14", "Field fixes on the L1W: perception as in 2.0, path shift patience and emergency slide, trip meter"]
   - ["2.3", "2026-11-14", "Path shift passes obstacles beside it parallel and drives narrow lanes in their middle"]
+  - ["2.4", "2026-11-14", "Detours: turning in place toward a gap when sliding does not get the robot on"]
 ---
 
 # How tuning works
@@ -311,6 +312,16 @@ person and a wall) with less than `path_shift.centre_room` beside the body, it d
 middle, to the centimetre. A gap ahead still needs `path_shift.clearance` on both sides (the
 field needs its `lateral_margin` too): a corridor at least 0.76 m wide for the L1W.
 
+When sliding does not get it on (walls too close for the guard to let it slide, a gap it
+passes only facing it, a crowd), the robot makes a **detour**: stuck for `detour.after_sec`
+(slower than 0.1 m/s on average, 1.5 s), it turns in place toward the gap that takes it
+furthest along the route, within `detour.max_angle_deg` of the route direction and no further
+from the route than path shift goes, and drives a straight run of up to `detour.length` at
+`detour.speed`. The turn and the run are checked like every command (room to turn, the swept
+body, the protective field); the run ends as soon as the way along the route is open again,
+and path shift brings the robot back. The status reads `detour: turning to +45 deg off the
+route, toward a gap`. Near a stop point there is no detour: the robot waits on the route.
+
 Something in the emergency cone of `obstacle_avoidance_node` (`shared.emergency_distance` 0.75 m
 ahead, `shared.emergency_cone_deg` 60°) stops the forward motion at once. With
 `path_shift.emergency_slide` the robot may still slide sideways out of the cone (a pole right in
@@ -327,6 +338,8 @@ starts with `EMERGENCY: ..., forward held` while it does.
 | `path_shift.patience_sec`, `path_shift.search_offset` | 3.0, 1.5   | s, m: wait with no gap, then search this far (0.8: off)    |
 | `path_shift.emergency_slide`                          | true       | an emergency stops only the forward motion; false: all     |
 | `path_shift.centre_room`                              | 0.25       | m beside the body: a narrower lane is driven in its middle |
+| `detour.after_sec`, `detour.speed`                    | 1.5, 0.25  | s stuck before a detour (0.5 at least), m/s on its run     |
+| `detour.max_angle_deg`, `detour.length`               | 75, 2.0    | deg off the route direction, m of one straight run         |
 
 ## What the LiDAR sees
 
@@ -601,6 +614,8 @@ with spaces, and never put a comment after a value.
 | Waits long in front of a person or a box        | `path_shift.patience_sec`, `path_shift.search_offset`              | 2.0; 2.0 where the aisle is wide                  |
 | Goes far around where it should wait            | `path_shift.search_offset`, `path_shift.patience_sec`              | 0.8 turns the search off                          |
 | Leaves the route in corridors wider than needed | `path_shift.centre_room`                                           | 0.15; 0.10 (= clearance) turns it off             |
+| Turns toward gaps too often in a crowd          | `detour.after_sec`                                                 | 2.5-3; `detour.enabled: false` turns it off       |
+| Waits in a tight spot it could turn out of      | `detour.after_sec`, `detour.max_angle_deg`                         | 1.0; 90                                           |
 | _Blocked_ too soon or too late                  | `safety.blocked_timeout_sec`                                       | to taste                                          |
 | **Start** refused: robot too far from the route | `join.max_distance`                                                | drive closer, or raise it                         |
 | **Start** refused: not localized                | a tag in view, `/localization/start`                               | **Localize** on the handheld                      |
