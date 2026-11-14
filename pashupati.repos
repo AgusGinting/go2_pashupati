@@ -30,7 +30,7 @@ repositories:
   dharma/dharma_navigation:
     type: git
     url: git@github.com:DarmawanRobotics/dharma_navigation.git
-    version: c2f116e5a10ccb34e728f736697202969c8b9452 # fix/path-shift-stuck 2026-11-14 (emergency slide, patience)
+    version: a25e994cd000d2235c0f60f71ad6d8069e3e5be1 # fix/path-shift-parallel 2026-11-14 (parallel pass, lanes)
   dharma/dharma_health:
     type: git
     url: git@github.com:DarmawanRobotics/dharma_health.git
