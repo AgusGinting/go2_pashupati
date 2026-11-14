@@ -5,6 +5,7 @@ from pashupati_bridge.core.summaries import (
     inspection_summary,
     mission_text,
     people_summary,
+    trip_summary,
 )
 
 
@@ -39,3 +40,10 @@ def test_mission_text():
     assert mission_text('PAUSED', ['operator', 'estop'], 3, 10) == 'paused: operator, estop'
     assert mission_text('FOLLOWING', [], 3, 10) == 'waypoint 4/10'
     assert mission_text('NAV_INACTIVE', [], 0, 10) == ''
+
+
+def test_trip_for_the_handheld():
+    out = trip_summary(1234.567, 3725.9, 0.4321, 0.38, 0.912, 1_794_550_000.7)
+    assert out == {'m': 1234.6, 's': 3726, 'v': 0.43, 'avg': 0.38, 'max': 0.91,
+                   'since': 1_794_550_001}  # fmt: skip
+    assert trip_summary(float('nan'), -1.0, float('inf'), 0.0, 0.0, 0.0)['m'] == 0.0

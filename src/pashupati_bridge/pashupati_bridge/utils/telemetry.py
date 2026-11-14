@@ -17,6 +17,7 @@ from dharma_interfaces.msg import (
     HealthStatus,
     LocalizationStatus,
     NavigationStatus,
+    TripStatus,
     WaypointPath,
 )
 from dharma_utils.ros import COMMAND, LATCHED
@@ -26,6 +27,7 @@ from pashupati_bridge.core.summaries import (
     inspection_summary,
     mission_text,
     people_summary,
+    trip_summary,
 )
 
 DETECTOR_STALE_SEC = 6.0  # anomaly_detector/status and people_status come every 2 s
@@ -56,6 +58,7 @@ class Telemetry:
             'health': None,
             'estop': False,
             'field': None,
+            'trip': None,
         }
         self.route: list = []
         self.findings: list = []
@@ -71,6 +74,7 @@ class Telemetry:
         )
         sub(String, 'perception/people_status', lambda m: self.on_detector('people', m), LATCHED)
         sub(WaypointPath, 'navigation/waypoints', self.on_waypoints, LATCHED)
+        sub(TripStatus, 'odometry/trip', self.on_trip, LATCHED)
         sub(BatteryState, 'battery', self.on_battery, 10)
         sub(DiagnosticArray, driver_diagnostics, self.on_driver, 10)
         sub(Twist, 'cmd_vel', self.on_cmd_vel, COMMAND)
@@ -142,6 +146,13 @@ class Telemetry:
         points = [[round(w.x, 2), round(w.y, 2), round(w.dwell_sec, 1)] for w in msg.waypoints]
         self.route = protocol.simplify_route(points, ROUTE_POINTS)
         self.on_route()
+
+    def on_trip(self, msg: TripStatus):
+        """Distance and speeds since the last trip_reset (dharma_odometry)."""
+        since = msg.since.sec + msg.since.nanosec * 1e-9
+        self.state['trip'] = trip_summary(
+            msg.distance, msg.moving_sec, msg.speed, msg.average, msg.max_speed, since
+        )
 
     def on_battery(self, msg: BatteryState):
         """Battery readings."""

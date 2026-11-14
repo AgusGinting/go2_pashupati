@@ -8,9 +8,10 @@ import time
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 import pytest
 from std_msgs.msg import String
+from std_srvs.srv import Trigger
 from teleop_rig import acks_of, fake_node, wait_until
 
-from dharma_interfaces.msg import HealthStatus
+from dharma_interfaces.msg import HealthStatus, TripStatus
 from dharma_utils.ros import LATCHED
 
 
@@ -266,3 +267,40 @@ def test_health_figures_and_driver_status_arrive_with_the_launch_remaps(launched
     assert state['driver']['msg'] == '2 fault(s)'
     rig.executor.remove_node(source)
     source.destroy_node()
+
+
+def test_trip_reaches_the_handheld_and_resets_on_the_robot(rig):
+    """odometry/trip in the state; trip_reset calls dharma_odometry's odometry/trip_reset."""
+    odometry = fake_node(rig, 'odometry_monitor_node', {})
+    trip_pub = odometry.create_publisher(TripStatus, 'odometry/trip', LATCHED)
+    resets = []
+
+    def on_reset(_request, response):
+        resets.append(True)
+        response.success, response.message = True, 'trip reset (was 12.3 m in 40 s)'
+        return response
+
+    odometry.create_service(Trigger, 'odometry/trip_reset', on_reset)
+    a = rig.client()
+    rig.send(a, {'t': 'hello'})
+    welcome = next(m for m in rig.received(a) if m['t'] == 'welcome')
+    assert 'trip_reset' in welcome['commands']
+    msg = TripStatus(distance=12.34, moving_sec=40.2, speed=0.41, average=0.31, max_speed=0.62)
+    msg.since.sec = 1_794_550_000
+    trip_pub.publish(msg)
+    states = []
+
+    def arrived():
+        states.extend(m for m in rig.received(a) if m['t'] == 'state')
+        return bool(states) and states[-1]['trip'] is not None
+
+    assert wait_until(rig, arrived)
+    assert states[-1]['trip'] == {'m': 12.3, 's': 40, 'v': 0.41, 'avg': 0.31, 'max': 0.62,
+                                  'since': 1_794_550_000}  # fmt: skip
+    assert wait_until(rig, rig.node.calls.table['trip_reset'][0].service_is_ready)
+    rig.send(a, {'t': 'cmd', 'id': 1, 'name': 'trip_reset'})
+    acks = {}
+    assert wait_until(rig, lambda: acks.update(acks_of(rig, a)) or acks.get(1, {}).get('ok'))
+    assert resets == [True]
+    rig.executor.remove_node(odometry)
+    odometry.destroy_node()

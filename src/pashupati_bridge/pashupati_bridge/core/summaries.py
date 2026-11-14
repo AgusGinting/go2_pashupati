@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 from pashupati_utils.core.numbers import number
 
 PEOPLE_BOX_SEC = 2.0  # older person boxes are not drawn
@@ -69,6 +71,24 @@ def people_summary(status: dict, stale: bool, now: float) -> dict:
         'boxes': people_boxes(status) if fresh else [],
         'backend': text(status.get('backend'), 24),
         'error': text(status.get('error'), 160),
+    }
+
+
+def trip_summary(
+    distance: float, moving_sec: float, speed: float, average: float, top: float, since: float
+) -> dict:
+    """Compact odometry/trip: m, moving s, speed now, average, top (m/s), since (unix s)."""
+
+    def value(x: float, digits: int) -> float:
+        return round(x, digits) if math.isfinite(x) and x >= 0.0 else 0.0
+
+    return {
+        'm': value(distance, 1),
+        's': int(value(moving_sec, 0)),
+        'v': value(speed, 2),
+        'avg': value(average, 2),
+        'max': value(top, 2),
+        'since': int(value(since, 0)),
     }
 
 

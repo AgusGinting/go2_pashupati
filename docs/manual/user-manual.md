@@ -2,8 +2,8 @@
 title: User Manual
 header: Pashupati User Manual
 subtitle: Patrol and inspection with the ZSBot Genisom L1W and the Pashupati Controller
-version: "1.1"
-date: 2026-11-01
+version: "1.2"
+date: 2026-11-14
 audience: For operators of a Genisom L1W running Pashupati. No robotics knowledge needed.
 note: >-
   The robot's own hardware (battery, charging, power switch, the ZSBot remote) is described in
@@ -13,6 +13,7 @@ note: >-
 revisions:
   - ["1.0", "2026-10-16", "First version: Pashupati with Pashupati Controller 2.6"]
   - ["1.1", "2026-11-01", "Time synchronisation for the technician"]
+  - ["1.2", "2026-11-14", "Trip meter on the main screen (Pashupati Controller 2.7)"]
 ---
 
 # Safety first
@@ -165,7 +166,7 @@ You only do this once per handheld, or when your technician gives you new detail
 | <span class="call">9</span> | Robot actions | stand up, sit down, balance, walk mode, gears, take control, motor stop |
 | <span class="call">10</span> | Small view | the camera or the map; tap it to swap the two views |
 | <span class="call">11</span> | View buttons | swap views, follow the robot, show the whole route, turn the map with the robot |
-| <span class="call">12</span> | At a glance | last AI result, frames waiting, people in view, the robot computer's load |
+| <span class="call">12</span> | At a glance | last AI result, frames waiting, people in view, the robot computer's load; the trip meter under it (section 4.5) |
 | <span class="call">13</span> | Patrol status | what the robot is doing now (section 7.5) |
 | <span class="call">14</span> | Map | the route in teal, stop points in yellow, the robot as an arrow |
 | <span class="call">15</span> | Toolbar | teach (Record, Point, Tags), patrol (Localize, Routes, Start, End), Inspect |
@@ -214,8 +215,23 @@ Tap the gear at the top right. Changes apply at once.
 | Camera video | video from the robot camera on or off |
 | Lidar points on the map | shows the walls and objects the scanner sees |
 | Robot CPU, GPU and RAM on screen | the load lines in the *At a glance* panel |
+| Distance and speed on screen | the trip meter under the *At a glance* panel (section 4.5) |
 | Language | English or Indonesian |
 | Inspection at a stop point | how long the robot waits at a point you mark with **Point** |
+
+## Trip meter
+
+Under the *At a glance* panel the trip meter shows how far the robot walked since it was last
+reset and for how long it was moving, its speed now, its average speed while moving and its top
+speed. The robot counts by itself, also while no handheld is connected, and keeps the numbers
+when it restarts. To start again from zero, hold the trip meter for a second. Turn it off with
+*Distance and speed on screen* in the settings.
+
+| Line | Example | Means |
+|---|---|---|
+| Distance | *1.24 km · moving 52:10* | walked since the last reset, and the time spent walking |
+| Now | *Now 0.38 m/s* | the speed over the last second |
+| Average | *Avg 0.36 · top 0.52 m/s* | the average while walking, and the top speed |
 
 # Driving by hand (REMOTE)
 

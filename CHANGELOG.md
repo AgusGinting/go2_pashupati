@@ -7,6 +7,11 @@ versions follow [SemVer](https://semver.org).
 
 ### Added
 
+- Trip meter: Dharma's `odometry_monitor_node` counts the distance, the moving time, the speed
+  now, the average and the top speed since the last reset (`odometry/trip`, kept in
+  `~/.pashupati/trip.json` across restarts). The handheld shows it under the glance panel
+  (`state.trip`) and a long press resets it (`trip_reset`, `odometry/trip_reset`). Needs
+  PashupatiController 2.7.
 - Documentation site: `docs/site` (the kit from the Dharma template, VitePress) builds the User
   Manual and the Tuning Guide (numbered like their PDFs, with the generated parameter
   reference), the READMEs, NETRA API and handheld protocol into a site with search and the PDFs,
@@ -44,6 +49,22 @@ versions follow [SemVer](https://semver.org).
 - The end-to-end patrol test waits for the ARRIVED of its own goal: a late ARRIVED of the
   previous goal on a busy machine marked a stop point at the wrong place and the patrol then
   inspected only two of the three.
+- Field fixes on the L1W (2026-11-14):
+  - Odometry, its TF and the clouds were ~1.4 s old (safety scan blind, protective field
+    _every sector blocked_): FAST-LIO took the IMU reliable with a queue of 10. A patch in
+    `src/xtras/patches` takes it best effort; `scripts/setup.sh install build` applies it.
+  - CPU, GPU and RAM never reached the handheld or NETRA: the launches' `diagnostics` remap
+    also moved `/diagnostics`. The driver topic is a parameter (`driver_diagnostics_topic`).
+  - RTSP camera: frame rate and scaling inside the pipeline, frames to ROS without a per-byte
+    copy; the person detector takes `camera_info` with sensor QoS.
+  - Perception as in 2.0 (fixed height band, no obstacle memory, front scan 180°), no on-line
+    extrinsic estimation in FAST-LIO, odometry tilt check at 9°: the robot stopped and weaved
+    around ghost obstacles.
+  - Path shift (Dharma pin): a pole in the emergency cone held the robot for good with room
+    beside it; the emergency now stops only the forward motion and it slides out
+    (`path_shift.emergency_slide`). In front of a person or a box it waits
+    `path_shift.patience_sec` (3 s), then searches a way up to `path_shift.search_offset`
+    (1.5 m) instead of waiting until _Blocked_.
 
 ## [3.0.0] - 2026-10-29
 
