@@ -350,7 +350,21 @@ check_build() {
     [[ "$built" == "$head" ]] || { echo "built from $built, source is $head: rebuild"; return 1; }
     echo "$n packages in install/, built from $head"
 }
+# Local fixes to third-party submodules: src/xtras/patches/<path>/*.patch onto src/xtras/<path>,
+# in name order, before every build. A patch that is already applied is skipped.
+apply_patches() {
+    local patch dir
+    while IFS= read -r -d '' patch; do
+        dir="$ROOT/src/xtras/$(dirname "${patch#"$ROOT/src/xtras/patches/"}")"
+        [[ -d "$dir" ]] || { log "skipped $patch: no $dir (scripts/setup.sh install submodules)"; continue; }
+        git -C "$dir" apply --reverse --check "$patch" 2>/dev/null && continue
+        git -C "$dir" apply "$patch" || { echo "cannot apply $patch onto $dir" >&2; return 1; }
+        log "patched ${dir#"$ROOT/"}: $(basename "$patch")"
+    done < <(find "$ROOT/src/xtras/patches" -name '*.patch' -print0 2>/dev/null | sort -z)
+}
+
 install_build() {
+    apply_patches
     source_ros
     local args=(--symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release)
     [[ -n "$BUILD_WORKERS" ]] && args=(--parallel-workers "$BUILD_WORKERS" "${args[@]}")
