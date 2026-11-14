@@ -48,12 +48,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: ROS apt key
-        # older images ship the ROS key that expired on 2025-06-01: put the current one in
-        # every keyring the ROS sources name
+        # older images ship the ROS key that expired on 2025-06-01: put the current one in the
+        # keyrings of packages.ros.org (not snapshots.ros.org, Foxy's: it has its own key)
         run: |
           python3 -c "import urllib.request as u; open('/tmp/ros.key', 'wb').write(u.urlopen('https://raw.githubusercontent.com/ros/rosdistro/master/ros.key').read())"
-          for keyring in $(grep -rhoE 'signed-by=[^] ]+' /etc/apt/sources.list.d/ | cut -d= -f2 | sort -u); do
-            gpg --batch --yes --dearmor -o "$keyring" /tmp/ros.key
+          for list in $(grep -rl 'packages.ros.org' /etc/apt/sources.list.d/ || true); do
+            for keyring in $(grep -oE 'signed-by=[^] ]+' "$list" | cut -d= -f2); do
+              gpg --batch --yes --dearmor -o "$keyring" /tmp/ros.key
+            done
           done
       - name: Dependencies
         run: |

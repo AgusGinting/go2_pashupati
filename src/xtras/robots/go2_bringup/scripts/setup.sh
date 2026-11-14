@@ -20,10 +20,11 @@ CYCLONEDDS_VERSION=0.10.2
     export CYCLONEDDS_HOME="$HOME/cyclonedds/install"
 
 # as the driver runs: the SDK's libddsc before a sourced ROS's (launch/bringup.launch.py)
-sdk_ok() {
+sdk_import() {
     LD_LIBRARY_PATH="${CYCLONEDDS_HOME:+$CYCLONEDDS_HOME/lib:}${LD_LIBRARY_PATH:-}" \
-        python3 -c 'import cyclonedds, unitree_sdk2py.go2.sport.sport_client' 2>/dev/null
+        python3 -c 'import cyclonedds, unitree_sdk2py.go2.sport.sport_client'
 }
+sdk_ok() { sdk_import 2>/dev/null; }
 
 check() {
     local ok=0
@@ -68,7 +69,7 @@ install() {
     }
     # --no-deps: its opencv-python would shadow ROS's cv2 and its numpy; ROS has numpy
     python3 -m pip install --user --no-deps "unitree_sdk2py @ git+$UNITREE_SDK_URL@$UNITREE_SDK_REF"
-    sdk_ok && echo "unitree_sdk2py: ok"
+    sdk_import && echo "unitree_sdk2py: ok"
 }
 
 case "${1:-check}" in
