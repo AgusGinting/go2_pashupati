@@ -119,12 +119,14 @@ check_ptp() {
 }
 
 ptp_config() { # ptp_config <ptp4l major version>
-    local only=masterOnly
-    [[ "${1:-3}" -ge 4 ]] && only=serverOnly
+    local only='masterOnly 1'
+    [[ "${1:-3}" -ge 4 ]] && only='serverOnly 1'
+    # linuxptp 1.x (Ubuntu 20.04) has neither option: priority1 below the default makes it master
+    [[ "${1:-3}" -lt 2 ]] && only=''
     cat <<EOF
 # Written by scripts/timesync.sh: PTP master for the LiDAR (Livox Mid-360: PTPv2 over UDP).
 [global]
-$only 1
+$only
 priority1 127
 domainNumber 0
 network_transport UDPv4

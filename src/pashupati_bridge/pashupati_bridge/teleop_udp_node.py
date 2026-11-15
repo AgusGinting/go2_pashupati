@@ -47,7 +47,9 @@ class TeleopUdpNode(DharmaNode):
         self.remote_pub = self.create_publisher(Twist, source, COMMAND)
         self.estop_pub = self.create_publisher(String, 'control/estop_request', EVENTS)
         self.calls = CommandClients(self, cfg, self.speed_range)
-        self.patrol = PatrolSpeed(self.calls.speed_client, self.speed_range)
+        self.patrol = PatrolSpeed(
+            self.calls.speed_client, self.speed_range, cfg.patrol_speed_scale
+        )
         self.telemetry = Telemetry(
             self, cfg.health_diagnostics_topic, cfg.driver_diagnostics_topic, self.send_route
         )
@@ -271,9 +273,10 @@ class TeleopUdpNode(DharmaNode):
         self.link.send_json(beacon, addr)
 
     def speed_range(self) -> tuple[float, float]:
-        """Return the patrol speeds the handheld may set (m/s)."""
+        """Return the patrol speeds the handheld may set, in slider units (m/s / scale)."""
         cfg = self.config.value
-        return cfg.patrol_speed_min, min(cfg.patrol_speed_max, self.robot.limits.max_vx)
+        high = min(cfg.patrol_speed_max, self.robot.limits.max_vx)
+        return cfg.patrol_speed_min / cfg.patrol_speed_scale, high / cfg.patrol_speed_scale
 
 
 def main(args=None):

@@ -1,0 +1,21 @@
+# go2_driver_node (launch/bringup.launch.py driver_config:=)
+/**:
+  ros__parameters:
+    network_interface: eth0 # the Jetson's interface to the robot (192.168.123.0/24)
+    cmd_timeout: 0.5 # s without cmd_vel -> StopMove (the robot contract)
+    command_rate: 50.0 # Hz, Move while a command is fresh, odom from each new state
+    # ceiling under robot.limits (config/robot.yaml), never above them
+    max_vx: 3.5 # m/s
+    max_vy: 0.8 # m/s
+    max_wz: 2.0 # rad/s
+    # Deadband: a walking command (vx, vy together) below min_speed is raised to it, a turn in
+    # place below min_wz too; the Go2 did not move for 0 < cmd <= 0.15 (2026-11-15 patrols).
+    # 0.15 / 0.3 left the Go2 standing in front of obstacles; at 0.25 / 0.5 its slides reached
+    # about half the command (2026-11-15). MEASURE and lower them to the edge.
+    min_speed: 0.3 # m/s
+    min_wz: 0.6 # rad/s
+    # The sport mode's speed range, set on connect and after stand_up: -1 slow, 0 normal,
+    # 1 fast. The Go2 EDU came up at -1, which held a 0.4 m/s command to ~0.3 m/s.
+    speed_level: 1
+    state_timeout: 1.0 # s without sport state -> diagnostics ERROR, no battery
+    stand_settle: 1.5 # s between StandUp and BalanceStand

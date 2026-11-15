@@ -4,8 +4,10 @@
 set -eo pipefail
 
 WS="${WS:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-# shellcheck disable=SC1091
-source /opt/ros/humble/setup.bash
+# the ROS 2 in /opt/ros (Foxy on a Go2 EDU, next to ROS 1 Noetic), else humble
+ROS_DISTRO="${ROS_DISTRO:-$(for d in /opt/ros/*/; do if [[ -x "${d}bin/ros2" ]]; then basename "$d"; fi; done | sort | tail -n1)}"
+# shellcheck disable=SC1090
+source "/opt/ros/${ROS_DISTRO:-humble}/setup.bash"
 # shellcheck disable=SC1091
 source "$WS/install/setup.bash"
 set -u

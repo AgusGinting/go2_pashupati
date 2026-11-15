@@ -61,9 +61,12 @@ class CommandClients:
         self.table[name] = (client, lambda a: set_parameters_request(pairs_of(a)))
 
     def speed_parameters(self, args: dict) -> list:
-        """Return the follower's speed.cruise for a nav_speed command."""
+        """Return the follower's speed.cruise for a nav_speed command (slider x scale)."""
         low, high = self.speed_range()
-        return [(CRUISE, commands.patrol_speed(args.get('speed'), low, high))]
+        scale = self.config.patrol_speed_scale
+        slider = commands.patrol_speed(args.get('speed'), round(low, 2), round(high, 2))
+        # the rounded slider maximum may sit a hair above the robot's: never past it
+        return [(CRUISE, min(round(slider * scale, 2), round(high * scale, 2)))]
 
     def names(self) -> list[str]:
         """Every command the welcome lists."""
@@ -79,11 +82,12 @@ def speed_of(response) -> float | None:
 
 
 class PatrolSpeed:
-    """The follower's patrol speed for the handheld, asked one request at a time."""
+    """The follower's patrol speed for the handheld (in slider units), one request at a time."""
 
-    def __init__(self, client, speed_range):
+    def __init__(self, client, speed_range, scale: float = 1.0):
         self.client = client
         self.speed_range = speed_range
+        self.scale = scale  # speed.cruise / the slider
         self.speed = None  # {target, min, max}; None without navigation
         self.asked = 0.0
         self.future = None
@@ -107,4 +111,8 @@ class PatrolSpeed:
             return
         if target is not None:
             low, high = self.speed_range()
-            self.speed = {'target': round(target, 2), 'min': low, 'max': round(high, 2)}
+            self.speed = {
+                'target': round(target / self.scale, 2),
+                'min': round(low, 2),
+                'max': round(high, 2),
+            }

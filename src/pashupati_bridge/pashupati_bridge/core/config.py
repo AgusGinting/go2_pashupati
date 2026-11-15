@@ -84,6 +84,9 @@ class TeleopConfig:
     patrol_speed_max: float = param(
         0.6, min=0.01, max=5.0, unit='m/s', live=False, doc='fastest (and robot.limits.max_vx)'
     )
+    patrol_speed_scale: float = param(
+        1.0, min=0.1, max=10.0, live=False, doc='speed.cruise = the handheld slider times this'
+    )
 
     def validate(self) -> list[str]:
         """Return cross-field problems."""
