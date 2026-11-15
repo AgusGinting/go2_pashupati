@@ -11,7 +11,7 @@ def test_sport_client_calls():
     from unitree_sdk2py.go2.sport.sport_client import SportClient
 
     for name in ('Init', 'SetTimeout', 'Move', 'StopMove', 'StandUp', 'StandDown',
-                 'BalanceStand', 'Damp'):  # fmt: skip
+                 'BalanceStand', 'Damp', 'SpeedLevel'):  # fmt: skip
         assert callable(getattr(SportClient, name, None)), name
 
 

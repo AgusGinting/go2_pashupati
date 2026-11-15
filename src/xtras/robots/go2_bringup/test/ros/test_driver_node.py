@@ -53,6 +53,8 @@ def rig():
     sport = FakeSport()
     node = Go2DriverNode(sport=sport)
     node.stand_settle = 0.0
+    assert sport.calls == [('SpeedLevel', 1)]  # fast, set once on connect
+    sport.calls.clear()
     helper = rclpy.create_node('go2_test_helper')
     executor = SingleThreadedExecutor()
     executor.add_node(node)
@@ -143,7 +145,7 @@ def call(rig, name):
 
 def test_services(rig):
     assert call(rig, 'stand_up').success
-    assert rig.sport.names() == ['StandUp', 'BalanceStand']
+    assert rig.sport.calls == [('StandUp',), ('BalanceStand',), ('SpeedLevel', 1)]
     rig.sport.calls.clear()
     assert call(rig, 'sit_down').success
     assert rig.sport.names() == ['StopMove', 'StandDown']

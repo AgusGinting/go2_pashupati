@@ -27,7 +27,8 @@ of the robot network appears in `ros2 topic list`, nothing on it can publish to 
 | `odom` publish, ~40 Hz      | `rt/lf/sportmodestate`: `velocity` (Unitree's odometry frame) turned into `base_link` by the IMU yaw, `yaw_speed` |
 | `battery` publish, 1 Hz     | `rt/lf/lowstate`: `bms_state.soc`, `power_v`, `bms_state.current`                             |
 | `diagnostics` publish, 1 Hz | sport `mode`, `gait_type`, `error_code`, `body_height`; ERROR without sport state for 1 s     |
-| `stand_up`                  | `StandUp`, 1.5 s, `BalanceStand` (the mode in which `Move` walks)                             |
+| `stand_up`                  | `StandUp`, 1.5 s, `BalanceStand` (the mode in which `Move` walks), `SpeedLevel`               |
+| (on connect)                | `SpeedLevel(speed_level)`: the firmware caps `Move` by it (-1 slow, 0 normal, 1 fast; default 1) |
 | `sit_down`                  | `StopMove`, `StandDown`                                                                       |
 | `emergency_stop`            | `Damp`: the motors go soft and the robot lies down, like the remote's e-stop                  |
 

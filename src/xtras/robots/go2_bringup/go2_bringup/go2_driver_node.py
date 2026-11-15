@@ -42,6 +42,8 @@ class Go2DriverNode(Node):
         limits = tuple(self.declare_parameter(name, value).value for name, value in ceiling)
         self.state_timeout = self.declare_parameter('state_timeout', 1.0).value
         self.stand_settle = self.declare_parameter('stand_settle', 1.5).value
+        # the sport mode's speed range: -1 slow, 0 normal, 1 fast; the firmware caps Move by it
+        self.speed_level = self.declare_parameter('speed_level', 1).value
 
         self.gate = CommandGate(timeout, limits)
         self._sport_state = None
@@ -66,6 +68,7 @@ class Go2DriverNode(Node):
             sport, self._subscribers = connect(interface, self.on_sport_state, self.on_low_state)
             self.get_logger().info(f'Go2 sport service on {interface or "the default interface"}')
         self.sport = sport
+        self.set_speed_level()
         self.create_timer(1.0 / rate, self.on_tick)
         self.create_timer(1.0, self.on_status)
 
@@ -144,12 +147,21 @@ class Go2DriverNode(Node):
         diagnostics.header.stamp = stamp
         self.diagnostics_pub.publish(diagnostics)
 
+    def set_speed_level(self) -> int:
+        """Ask the sport mode for speed_level (a failure is logged, the driver goes on)."""
+        code = self.sport.SpeedLevel(self.speed_level)
+        if code != 0:
+            self.get_logger().warn(f'speed level {self.speed_level}: sport service code {code}')
+        return code
+
     def stand_up(self, request, response):
-        """Stand, then balance stand: the mode in which Move walks."""
+        """Stand, then balance stand: the mode in which Move walks, at speed_level."""
         code = self.sport.StandUp()
         if code == 0:
             time.sleep(self.stand_settle)
             code = self.sport.BalanceStand()
+        if code == 0:
+            self.set_speed_level()
         return self._answer(response, 'stand_up', code)
 
     def sit_down(self, request, response):
