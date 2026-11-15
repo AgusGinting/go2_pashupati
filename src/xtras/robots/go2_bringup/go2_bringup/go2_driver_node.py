@@ -49,7 +49,11 @@ class Go2DriverNode(Node):
         self.speed_level = self.declare_parameter('speed_level', 1).value
         self.level_set = False  # set again whenever the robot stands up, by whatever means
 
-        self.gate = CommandGate(timeout, limits)
+        # the Go2 does not walk to smaller commands (its deadband): 0 leaves them as they are
+        deadband = tuple(
+            self.declare_parameter(name, 0.0).value for name in ('min_speed', 'min_wz')
+        )
+        self.gate = CommandGate(timeout, limits, deadband)
         self._sport_state = None
         self._sport_stamp: float | None = None
         self._sport_count = 0

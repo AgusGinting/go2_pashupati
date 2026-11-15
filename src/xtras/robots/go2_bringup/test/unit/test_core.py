@@ -10,6 +10,7 @@ from go2_bringup.core import (
     battery_fraction,
     body_velocity,
     clamp,
+    lift,
 )
 import pytest
 
@@ -77,6 +78,33 @@ def test_non_finite_command_is_dropped(bad):
     assert not g.update(bad, 0.0, 0.0, now=0.1)
     assert g.tick(0.2) == (MOVE, (0.3, 0.0, 0.0))  # the last good one, until it times out
     assert g.tick(0.6)[0] == STOP
+
+
+@pytest.mark.parametrize(
+    ('cmd', 'expected'),
+    [
+        ((0.0, 0.05, 0.0), (0.0, 0.15, 0.0)),  # a slow slide past an obstacle: up to the edge
+        ((0.03, -0.04, 0.0), (0.09, -0.12, 0.0)),  # the direction is kept
+        ((0.3, 0.02, 0.1), (0.3, 0.02, 0.1)),  # walking: a small correction is left alone
+        ((0.0, 0.0, 0.1), (0.0, 0.0, 0.3)),  # a slow turn in place
+        ((0.0, 0.0, -0.1), (0.0, 0.0, -0.3)),
+        ((0.1, 0.0, 0.1), (0.15, 0.0, 0.1)),  # the turn is not lifted while walking
+        ((0.005, 0.0, 0.005), (0.005, 0.0, 0.005)),  # noise stays noise
+        ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+    ],
+)
+def test_lift_over_the_deadband(cmd, expected):
+    assert lift(*cmd, 0.15, 0.3) == pytest.approx(expected)
+
+
+def test_lift_off_by_default():
+    assert lift(0.0, 0.05, 0.1, 0.0, 0.0) == (0.0, 0.05, 0.1)
+
+
+def test_gate_lifts_then_clamps():
+    g = CommandGate(0.5, (1.0, 0.1, 1.5), deadband=(0.15, 0.3))
+    g.update(0.0, 0.05, 0.0, now=0.0)
+    assert g.tick(0.0) == (MOVE, (0.0, 0.1, 0.0))  # lifted to 0.15, then max_vy 0.1
 
 
 def test_halt_forgets_the_command_without_a_stop():

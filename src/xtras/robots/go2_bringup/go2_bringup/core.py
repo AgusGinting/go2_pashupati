@@ -21,6 +21,23 @@ def body_velocity(vx: float, vy: float, yaw: float) -> tuple[float, float]:
     return c * vx + s * vy, -s * vx + c * vy
 
 
+ZERO = 0.01  # m/s, rad/s: below it a command axis counts as zero (no lift)
+
+
+def lift(vx: float, vy: float, wz: float, min_speed: float, min_wz: float):
+    """Raise a command the Go2 would not walk to its deadband, keeping the direction.
+
+    The walking speed (vx, vy together, so a slow sideways correction while walking forward is
+    left alone) goes up to min_speed; a turn in place up to min_wz. 0 turns either off.
+    """
+    speed = math.hypot(vx, vy)
+    if min_speed > 0.0 and ZERO < speed < min_speed:
+        vx, vy = vx * min_speed / speed, vy * min_speed / speed
+    if min_wz > 0.0 and speed <= ZERO < abs(wz) < min_wz:
+        wz = math.copysign(min_wz, wz)
+    return vx, vy, wz
+
+
 def battery_fraction(soc: int) -> float:
     """Return the BMS state of charge (0-100 %) as BatteryState.percentage (0-1)."""
     return min(max(soc, 0), 100) / 100.0
@@ -33,9 +50,11 @@ class CommandGate:
     gets nothing while the control mux publishes zeros.
     """
 
-    def __init__(self, timeout: float, limits: tuple[float, float, float]):
+    def __init__(self, timeout: float, limits: tuple[float, float, float],
+                 deadband: tuple[float, float] = (0.0, 0.0)):  # fmt: skip
         self.timeout = timeout
         self.limits = limits
+        self.deadband = deadband  # (min_speed, min_wz) for lift(); zeros: off
         self._cmd = (0.0, 0.0, 0.0)
         self._stamp: float | None = None
         self.moving = False
@@ -44,6 +63,7 @@ class CommandGate:
         """Take a command; a non-finite one is dropped (False) and the robot stops on timeout."""
         if not all(math.isfinite(v) for v in (vx, vy, wz)):
             return False
+        vx, vy, wz = lift(vx, vy, wz, *self.deadband)
         lx, ly, lw = self.limits
         self._cmd = (clamp(vx, lx), clamp(vy, ly), clamp(wz, lw))
         self._stamp = now
