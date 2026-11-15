@@ -163,6 +163,27 @@ def test_emergency_stop_halts_motion(rig):
     assert rig.sport.calls == []  # no Move, and no StopMove after the Damp
 
 
+def test_speed_level_is_set_whenever_the_robot_stands_up(rig):
+    lying, standing = sport_state(), sport_state()
+    lying.body_height = 0.08
+    rig.node.on_sport_state(lying)
+    rig.node.on_status()
+    assert rig.sport.calls == []  # lying: nothing asked, the next stand-up sets it
+    rig.sport.code = -1  # refused once (still getting up)
+    rig.node.on_sport_state(standing)
+    rig.node.on_status()
+    rig.sport.code = 0
+    rig.node.on_status()
+    rig.node.on_status()  # set: not asked again while it stands
+    assert rig.sport.calls == [('SpeedLevel', 1), ('SpeedLevel', 1)]
+    rig.sport.calls.clear()
+    rig.node.on_sport_state(lying)
+    rig.node.on_status()
+    rig.node.on_sport_state(standing)  # stood up by the Unitree remote
+    rig.node.on_status()
+    assert rig.sport.calls == [('SpeedLevel', 1)]
+
+
 def test_service_failure_is_reported(rig):
     rig.sport.code = 3104
     response = call(rig, 'stand_up')

@@ -26,6 +26,9 @@ from go2_bringup.link import connect
 
 ODOM_FRAME = 'odom'
 BASE_FRAME = 'base_link'
+# body_height above this is standing (0.32 m standing, 0.08 lying on the Go2 EDU): the sport
+# mode takes SpeedLevel only then
+STANDING_HEIGHT = 0.2
 
 
 class Go2DriverNode(Node):
@@ -44,6 +47,7 @@ class Go2DriverNode(Node):
         self.stand_settle = self.declare_parameter('stand_settle', 1.5).value
         # the sport mode's speed range: -1 slow, 0 normal, 1 fast; the firmware caps Move by it
         self.speed_level = self.declare_parameter('speed_level', 1).value
+        self.level_set = False  # set again whenever the robot stands up, by whatever means
 
         self.gate = CommandGate(timeout, limits)
         self._sport_state = None
@@ -68,7 +72,8 @@ class Go2DriverNode(Node):
             sport, self._subscribers = connect(interface, self.on_sport_state, self.on_low_state)
             self.get_logger().info(f'Go2 sport service on {interface or "the default interface"}')
         self.sport = sport
-        self.set_speed_level()
+        if self.set_speed_level(quiet=True) != 0:
+            self.get_logger().info(f'speed level {self.speed_level} once the robot stands')
         self.create_timer(1.0 / rate, self.on_tick)
         self.create_timer(1.0, self.on_status)
 
@@ -136,6 +141,10 @@ class Go2DriverNode(Node):
         if state is None or now - self._sport_stamp > self.state_timeout:
             status.level, status.message = DiagnosticStatus.ERROR, 'no sport state from the robot'
         else:
+            if state.body_height <= STANDING_HEIGHT:
+                self.level_set = False  # lying: the next stand-up sets it again
+            elif not self.level_set:
+                self.set_speed_level()
             status.level, status.message = DiagnosticStatus.OK, 'ok'
             status.values = [KeyValue(key=key, value=str(value)) for key, value in (
                 ('mode', state.mode), ('gait_type', state.gait_type),
@@ -147,11 +156,17 @@ class Go2DriverNode(Node):
         diagnostics.header.stamp = stamp
         self.diagnostics_pub.publish(diagnostics)
 
-    def set_speed_level(self) -> int:
-        """Ask the sport mode for speed_level (a failure is logged, the driver goes on)."""
+    def set_speed_level(self, quiet: bool = False) -> int:
+        """Ask the sport mode for speed_level; it refuses while the robot lies (code -1)."""
         code = self.sport.SpeedLevel(self.speed_level)
-        if code != 0:
-            self.get_logger().warn(f'speed level {self.speed_level}: sport service code {code}')
+        self.level_set = code == 0
+        if code == 0:
+            self.get_logger().info(f'speed level {self.speed_level}')
+        elif not quiet:
+            self.get_logger().warn(
+                f'speed level {self.speed_level}: sport service code {code}',
+                throttle_duration_sec=30.0,
+            )
         return code
 
     def stand_up(self, request, response):
