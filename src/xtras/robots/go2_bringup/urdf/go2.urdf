@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <!-- Go2 EDU with a Livox Mid-360 and a RealSense D435i, the frames Pashupati needs
      (src/xtras/README.md, TF). base_link is the centre of the body, x forward, z up.
-     MEASURE the two sensor mounts on the robot and set them here (tf2_echo base_link livox_frame
-     after editing); the legs are not modelled: the robot profile's footprint covers them. -->
+     The Mid-360 mount is measured; the camera's is not yet (tf2_echo base_link livox_frame after
+     editing); the legs are not modelled: the robot profile's footprint covers them. -->
 <robot name="go2">
   <link name="base_link">
     <visual>
@@ -16,8 +16,8 @@
   <joint name="livox_joint" type="fixed">
     <parent link="base_link"/>
     <child link="livox_frame"/>
-    <!-- MEASURE: the Mid-360 on its mount (centre of its optical window) -->
-    <origin xyz="0.10 0.0 0.16" rpy="0 0 0"/>
+    <!-- measured on the Go2 EDU: 0.187 m ahead, 0.080 m up, pitched 13 deg down (0.226893 rad) -->
+    <origin xyz="0.187 0.0 0.0803" rpy="0 0.226893 0"/>
   </joint>
 
   <link name="livox_imu_frame"/>

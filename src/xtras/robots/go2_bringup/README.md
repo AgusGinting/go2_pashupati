@@ -57,9 +57,10 @@ breaks `import cyclonedds` (`undefined symbol: ddsi_sertype_v0`).
 
 ## Before the first patrol
 
-1. **Mounts:** measure the Mid-360 on the robot and set `livox_joint` in `urdf/go2.urdf`;
-   measure the footprint with the sensors on (`config/robot.yaml`). The site file's LiDAR
-   height band (`filter.height_max`, Tuning Guide) was set for the taller L1W.
+1. **Mounts:** the Mid-360 mount is in `urdf/go2.urdf` (`livox_joint`, measured: 13° down);
+   measure the footprint with the sensors on (`config/robot.yaml`). The LiDAR height band of
+   `config/stack.yaml` (`filter.height_max` 1.55 m) was set for the taller L1W: on the Go2 it
+   only keeps the protective field more cautious (it also sees what the Go2 could pass under).
    The camera is off (`camera:=false`, no AprilTags, VLM inspection or people). Before turning
    it on, calibrate it again: the FAST-Calib result on this Go2
    (`~/calib_results/board0_success_*`) used 1280x720 intrinsics on 640x480 images and puts the
