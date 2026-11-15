@@ -1,0 +1,18 @@
+FAST-LIO: take the map_save request as Request::SharedPtr, for Foxy.
+
+Foxy's rclcpp only binds service callbacks of (Request::SharedPtr, Response::SharedPtr): the
+ConstSharedPtr request does not compile there (no matching AnyServiceCallback::set), which
+stops the build on the Go2 EDU's Jetson (Ubuntu 20.04). Humble takes both.
+
+diff --git a/src/laserMapping.cpp b/src/laserMapping.cpp
+--- a/src/laserMapping.cpp
++++ b/src/laserMapping.cpp
+@@ -1112,7 +1112,7 @@
+         if (map_pub_en) publish_map(pubLaserCloudMap_);
+     }
+
+-    void map_save_callback(std_srvs::srv::Trigger::Request::ConstSharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res)
++    void map_save_callback(std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res)
+     {
+         RCLCPP_INFO(this->get_logger(), "Saving map to %s...", map_file_path.c_str());
+         if (pcd_save_en)
