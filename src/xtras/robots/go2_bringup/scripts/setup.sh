@@ -2,12 +2,13 @@
 # The Go2 robot package's installer (ROBOT_SETUP in /etc/pashupati/pashupati.env), run by
 # `scripts/setup.sh check` and `scripts/setup.sh install robot`:
 #
-#   setup.sh check     # unitree_sdk2py importable, the robot answers on its interface
-#   setup.sh install   # cyclonedds 0.10.2 and unitree_sdk2py (pinned, ~/unitree_sdk2_python)
+#   setup.sh check     # unitree_sdk2py importable, the robot answers, the dock's USB powered
+#   setup.sh install   # cyclonedds 0.10.2 and unitree_sdk2py (pinned, ~/unitree_sdk2_python),
+#                      # and on the Jetson the boot service that powers the dock's USB ports
 #
 # Env: GO2_IFACE (eth0), ROBOT_IP (192.168.123.161), UNITREE_SDK_REF (the pinned commit),
 #      CYCLONEDDS_HOME (a Cyclone DDS 0.10 C build; built in ~/cyclonedds/install when pip
-#      finds no wheel, e.g. on aarch64), FORCE=1 (reinstall anyway)
+#      finds no wheel, e.g. on aarch64), FORCE=1 (reinstall anyway), SUDO (sudo, or empty as root)
 set -euo pipefail
 
 GO2_IFACE="${GO2_IFACE:-eth0}"
@@ -16,6 +17,9 @@ ROBOT_IP="${ROBOT_IP:-192.168.123.161}"
 UNITREE_SDK_REF="${UNITREE_SDK_REF:-f5592911758bf20c4b2b3124c9421d89c685325d}"
 UNITREE_SDK_URL="https://github.com/unitreerobotics/unitree_sdk2_python"
 CYCLONEDDS_VERSION=0.10.2
+USB_UNIT=/etc/systemd/system/go2-usb-power.service
+# SUDO="sudo -A" with SUDO_ASKPASS when there is no terminal
+SUDO="${SUDO:-$([[ $EUID -eq 0 ]] || echo sudo)}"
 [[ -n "${CYCLONEDDS_HOME:-}" || ! -d "$HOME/cyclonedds/install" ]] ||
     export CYCLONEDDS_HOME="$HOME/cyclonedds/install"
 
@@ -45,7 +49,41 @@ check() {
         echo "interface $GO2_IFACE: missing (GO2_IFACE, network_interface in go2_driver.yaml)"
         ok=1
     fi
+    if [[ -f /etc/nv_tegra_release ]]; then
+        if systemctl is-enabled --quiet go2-usb-power 2>/dev/null; then
+            echo "dock USB power at boot: ok"
+        else
+            echo "dock USB power at boot: missing (setup.sh install)"
+            ok=1
+        fi
+    fi
     return $ok
+}
+
+# The Go2 EDU dock powers its USB ports (camera, phone tethering) only after this, from
+# Unitree's "usb3.0 activation" note on the robot; rndis_host is a module on that kernel.
+usb_unit() {
+    cat <<'EOF'
+[Unit]
+Description=Power the Go2 EDU dock's USB ports (go2_bringup scripts/setup.sh)
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'busybox devmem 0x02430030 w 0x004; [ -d /sys/class/gpio/PP.06 ] || echo 446 > /sys/class/gpio/export; echo out > /sys/class/gpio/PP.06/direction; echo 1 > /sys/class/gpio/PP.06/value'
+ExecStartPost=/sbin/modprobe rndis_host
+
+[Install]
+WantedBy=multi-user.target
+EOF
+}
+
+install_usb() {
+    [[ -f /etc/nv_tegra_release ]] || { echo "dock USB power: skipped, not a Jetson"; return 0; }
+    usb_unit | $SUDO tee "$USB_UNIT" >/dev/null
+    $SUDO systemctl daemon-reload
+    $SUDO systemctl enable --now go2-usb-power >/dev/null 2>&1
+    echo "dock USB power at boot: $(systemctl is-active go2-usb-power)"
 }
 
 # Cyclone DDS 0.10.x (C) for pip to build the Python binding against
@@ -59,6 +97,11 @@ build_cyclonedds() {
 }
 
 install() {
+    install_sdk
+    install_usb
+}
+
+install_sdk() {
     if sdk_ok && [[ "${FORCE:-0}" != 1 ]]; then
         echo "unitree_sdk2py already installed (FORCE=1 to reinstall)"
         return 0
