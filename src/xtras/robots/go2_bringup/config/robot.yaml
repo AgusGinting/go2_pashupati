@@ -15,7 +15,7 @@
         max_vx: 1.0 # m/s
         max_vy: 0.5 # m/s
         max_wz: 1.5 # rad/s
-        max_accel: 0.5 # m/s^2
+        max_accel: 1.0 # m/s^2 (L1W 0.5): the Go2 holds back a slow start
         max_decel: 0.6 # m/s^2, MEASURE: braking from full speed on the site's floor
         max_yaw_accel: 1.5 # rad/s^2
         reaction_time: 0.25 # s, command to the robot actually braking
