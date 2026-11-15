@@ -73,7 +73,8 @@ ALL=(ros tools submodules dharma livox robot legkilo rosdep realsense webrtc oll
 DEFAULT_INSTALL=(tools submodules dharma livox robot legkilo rosdep realsense webrtc ollama build config
                  timesync ptp)
 
-SUDO=$([[ "$(id -u)" -eq 0 ]] && echo "" || echo "sudo")
+# SUDO="sudo -A" (with SUDO_ASKPASS) installs without a terminal, e.g. over ssh
+SUDO="${SUDO:-$([[ "$(id -u)" -eq 0 ]] && echo "" || echo "sudo")}"
 IN_DOCKER=$([[ -f /.dockerenv ]] && echo 1 || echo 0)
 if [[ -t 1 ]]; then
     GREEN=$'\e[32m' RED=$'\e[31m' YELLOW=$'\e[33m' BOLD=$'\e[1m' RESET=$'\e[0m'
