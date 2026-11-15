@@ -25,7 +25,7 @@ The wire format is [PROTOCOL.md](PROTOCOL.md) (v1, unchanged for the handheld).
 | `localize`, `record_tags`      | `localization/start`, `localization/record_tags`                                                                            |
 | `dock`, `undock`               | `docking/dock`, `docking/undock`                                                                                            |
 | `trip_reset`                   | `odometry/trip_reset` (dharma_odometry): the trip meter back to zero                                                        |
-| `nav_speed`                    | `path_follower_node` `speed.cruise`, between `patrol_speed_min` and `patrol_speed_max` (never above `robot.limits.max_vx`)  |
+| `nav_speed`                    | `path_follower_node` `speed.cruise` = the slider × `patrol_speed_scale` (1), between `patrol_speed_min` and `patrol_speed_max` (never above `robot.limits.max_vx`); the handheld sees the slider value |
 | `inspection_set`, `people_set` | live parameters of `anomaly_detector_node`, `person_detector_node`                                                          |
 | robot commands                 | `std_srvs/Trigger` `/<robot_ns>/<name>` of the driver (`robot_commands`; `emergency_stop` also latches the software e-stop) |
 

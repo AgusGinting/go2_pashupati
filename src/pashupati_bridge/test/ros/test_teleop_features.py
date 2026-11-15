@@ -9,7 +9,7 @@ from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 import pytest
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
-from teleop_rig import acks_of, fake_node, wait_until
+from teleop_rig import Rig, acks_of, fake_node, wait_until
 
 from dharma_interfaces.msg import HealthStatus, TripStatus
 from dharma_utils.ros import LATCHED
@@ -174,6 +174,37 @@ def test_patrol_speed_is_read_and_set_within_the_limits(rig):
     assert follower.get_parameter('speed.cruise').value == 0.55
     rig.executor.remove_node(follower)
     follower.destroy_node()
+
+
+def test_patrol_speed_scale_multiplies_the_slider():
+    """With patrol_speed_scale 2 the slider's 0.35 is a speed.cruise of 0.7, shown as 0.35."""
+    rig = Rig(['patrol_speed_scale:=2.0', 'patrol_speed_max:=1.0'])
+    try:
+        follower = fake_node(rig, 'path_follower_node', {'speed.cruise': 0.8})
+        a = rig.client()
+        assert wait_until(rig, rig.node.calls.speed_client.service_is_ready)
+        rig.send(a, {'t': 'hello'})
+        states = []
+        wait_until(
+            rig,
+            lambda: (
+                states.extend(m for m in rig.received(a) if m['t'] == 'state')
+                or (states and states[-1]['speed'] is not None)
+            ),
+        )
+        assert states[-1]['speed'] == {'target': 0.4, 'min': 0.05, 'max': 0.5}
+
+        rig.send(a, {'t': 'cmd', 'id': 1, 'name': 'nav_speed', 'args': {'speed': 0.35}})
+        rig.send(a, {'t': 'cmd', 'id': 2, 'name': 'nav_speed', 'args': {'speed': 0.6}})
+        acks = {}
+        wait_until(rig, lambda: acks.update(acks_of(rig, a)) or len(acks) >= 2)
+        assert acks[1]['ok'] and not acks[2]['ok']
+        assert '0.5' in acks[2]['msg']  # the limit in slider units
+        assert follower.get_parameter('speed.cruise').value == 0.7
+        rig.executor.remove_node(follower)
+        follower.destroy_node()
+    finally:
+        rig.close()
 
 
 def test_people_detection_is_switched_and_shown_with_the_system_load(rig):
