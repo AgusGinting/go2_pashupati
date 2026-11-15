@@ -13,7 +13,8 @@
 set -euo pipefail
 
 WS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-installed=$(find /opt/ros -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2> /dev/null | sort | tail -n1)
+# ROS 2 only: a Go2 EDU also has ROS 1 Noetic in /opt/ros
+installed=$(for d in /opt/ros/*/; do if [[ -x "${d}bin/ros2" ]]; then basename "$d"; fi; done | sort | tail -n1)
 export WS ROS_DISTRO="${ROS_DISTRO:-${installed:-humble}}"
 LAYOUT="${1:-robot}"
 [[ -f "$LAYOUT" ]] || LAYOUT="$WS/scripts/tmux/$LAYOUT.yaml"

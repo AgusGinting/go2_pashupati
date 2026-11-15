@@ -11,7 +11,7 @@
 #             build config service network timesync ptp
 # Settings come from the environment, then from /etc/pashupati/pashupati.env (ROBOT_SETUP,
 # ROBOT_IP, PEOPLE, INSPECTION, ...): no need to source it first.
-# Env: ROS_DISTRO (humble), LIVOX_SDK_REF (master), ROBOT_SETUP (the robot package's own
+# Env: ROS_DISTRO (the ROS 2 in /opt/ros, else humble), LIVOX_SDK_REF (master), ROBOT_SETUP (the robot package's own
 #      installer, `<script> check|install`, e.g. for a vendor SDK; see src/xtras/README.md),
 #      ROBOT_IP (robot SDK address for the network check), VLM_MODEL (qwen3-vl:2b-instruct),
 #      VLM_EXTRA_MODELS (other models the handheld can switch to, pulled best effort),
@@ -45,6 +45,8 @@ load_env_file() {
 }
 load_env_file
 
+# the ROS 2 in /opt/ros (Foxy on a Go2 EDU, next to ROS 1 Noetic), else humble
+ROS_DISTRO="${ROS_DISTRO:-$(for d in /opt/ros/*/; do if [[ -x "${d}bin/ros2" ]]; then basename "$d"; fi; done | sort | tail -n1)}"
 ROS_DISTRO="${ROS_DISTRO:-humble}"
 LIVOX_SDK_REPO="${LIVOX_SDK_REPO:-https://github.com/Livox-SDK/Livox-SDK2.git}"
 LIVOX_SDK_REF="${LIVOX_SDK_REF:-master}"
